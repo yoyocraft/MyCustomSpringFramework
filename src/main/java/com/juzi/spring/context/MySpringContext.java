@@ -2,10 +2,13 @@ package com.juzi.spring.context;
 
 import com.juzi.spring.annotation.Component;
 import com.juzi.spring.annotation.MyComponentScan;
+import com.juzi.spring.annotation.Scope;
 import com.juzi.spring.config.MySpringConfig;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
 import java.net.URL;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 容器类
@@ -16,11 +19,37 @@ public class MySpringContext {
     /**
      * 保存配置类对象，获取扫描包
      */
-    private final Class<MySpringConfig> configClass;
+    private Class<MySpringConfig> configClass;
 
+    /**
+     * 过滤出要处理的类名的后缀
+     */
     private static final String PROCESS_FILE_PATH_SUFFIX = ".class";
 
+    /**
+     * 默认的scope value
+     */
+    private static final String DEFAULT_SCOPE_VALUE = "singleton";
+
+    /**
+     * 存放bean的定义
+     */
+    private final ConcurrentHashMap<String, BeanDefinition> beanDefinitionMap;
+
+    /**
+     * bean 单例池
+     */
+    private final ConcurrentHashMap<String, Object> singletonObjects;
+
+
     public MySpringContext(Class<MySpringConfig> configClass) {
+        singletonObjects = new ConcurrentHashMap<>();
+        beanDefinitionMap = new ConcurrentHashMap<>();
+        beanDefinitionScan(configClass);
+    }
+
+    public void beanDefinitionScan(Class<MySpringConfig> configClass) {
+
         this.configClass = configClass;
 
         // 获取扫描包
@@ -55,7 +84,26 @@ public class MySpringContext {
                     try {
                         Class<?> clazz = classLoader.loadClass(classFullName);
                         if(clazz.isAnnotationPresent(Component.class)) {
-                            System.out.printf("%s是一个SpringBean%n", className);
+                            // 封装bean信息到BeanDefinition
+                            BeanDefinition beanDefinition = new BeanDefinition();
+                            beanDefinition.setClazz(clazz);
+                            // 得到beanName
+                            Component component = clazz.getDeclaredAnnotation(Component.class);
+                            String beanName = component.value();
+                            // beanName校验
+                            if("".equals(beanName)) {
+                                beanName = StringUtils.uncapitalize(className);
+                            }
+                            // 得到bean的Scope
+                            if(clazz.isAnnotationPresent(Scope.class)) {
+                                // 有Scope注解
+                                Scope scopeAnnotation = clazz.getDeclaredAnnotation(Scope.class);
+                                beanDefinition.setScopeValue(scopeAnnotation.value());
+                            } else {
+                                // 无Scope注解
+                                beanDefinition.setScopeValue(DEFAULT_SCOPE_VALUE);
+                            }
+                            beanDefinitionMap.put(beanName, beanDefinition);
                         } else {
                             System.out.printf("%s不是一个SpringBean%n", className);
                         }
