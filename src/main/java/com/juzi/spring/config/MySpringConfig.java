@@ -1,6 +1,7 @@
 package com.juzi.spring.config;
 
-import com.juzi.spring.annotation.ComponentScan;
+
+import com.juzi.spring.annotation.MyComponentScan;
 
 /**
  * 作用：代替Spring中的*.xml文件
@@ -8,6 +9,6 @@ import com.juzi.spring.annotation.ComponentScan;
  *
  * @author codejuzi
  */
-@ComponentScan(value = "com.juzi.spring.component")
+@MyComponentScan(value = "com.juzi.spring.component")
 public class MySpringConfig {
 }
