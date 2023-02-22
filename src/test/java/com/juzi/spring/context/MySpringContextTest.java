@@ -38,4 +38,11 @@ public class MySpringContextTest {
         monsterService.hi();
     }
 
+    @Test
+    public void testPostBeanProcessor() {
+        MySpringContext mySpringContext = new MySpringContext(MySpringConfig.class);
+
+        Assert.assertNotNull(mySpringContext);
+    }
+
 }
