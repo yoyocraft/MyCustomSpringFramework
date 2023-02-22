@@ -10,4 +10,8 @@ import com.juzi.spring.annotation.Scope;
 @Scope(value = "prototype")
 @Component(value = "monsterDAO")
 public class MonsterDAO {
+
+    public void hi() {
+        System.out.println("MonsterDAO - hi() - accessed");
+    }
 }

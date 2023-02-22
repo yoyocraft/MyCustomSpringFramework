@@ -1,5 +1,6 @@
 package com.juzi.spring.context;
 
+import com.juzi.spring.annotation.Autowired;
 import com.juzi.spring.annotation.Component;
 import com.juzi.spring.annotation.MyComponentScan;
 import com.juzi.spring.annotation.Scope;
@@ -7,6 +8,7 @@ import com.juzi.spring.config.MySpringConfig;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.Map;
@@ -32,6 +34,8 @@ public class MySpringContext {
      * 默认的scope value
      */
     private static final String DEFAULT_SCOPE_VALUE = "singleton";
+
+    private static final String AUTOWIRED_REQUIRED = "true";
 
     /**
      * 存放bean的定义
@@ -152,6 +156,24 @@ public class MySpringContext {
         // 通过反射创建bean实例
         try {
             instance = clazz.getDeclaredConstructor().newInstance();
+            // 实现依赖注入
+            for (Field declaredField : clazz.getDeclaredFields()) {
+                if(declaredField.isAnnotationPresent(Autowired.class)) {
+                    String fieldName = declaredField.getName();
+                    // 装配有Autowired注解
+                    Autowired autowired = declaredField.getDeclaredAnnotation(Autowired.class);
+                    String required = autowired.required();
+
+                    // 必须装配成功 && bean definition map 中不存在该bean
+                    if(AUTOWIRED_REQUIRED.equals(required) && !beanDefinitionMap.containsKey(fieldName)) {
+                        throw new NullPointerException(fieldName + " is not exist in bean definition map");
+                    }
+                    // 得到对象并组装
+                    Object wiredBean = getBean(fieldName);
+                    declaredField.setAccessible(true);
+                    declaredField.set(instance, wiredBean);
+                }
+            }
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             e.printStackTrace();
         }
